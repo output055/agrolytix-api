@@ -91,7 +91,11 @@ class ProductController extends Controller
     {
         $this->adminOnly($request);
         $data = $request->validate(['quantity' => 'required|integer|min:1']);
-        $product->increment('quantity', $data['quantity']);
+        
+        $product->quantity += $data['quantity'];
+        $product->last_added_qty = $data['quantity'];
+        $product->save();
+        
         return response()->json($product->fresh('units'));
     }
 

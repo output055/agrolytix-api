@@ -53,7 +53,11 @@ class WholesaleProductController extends Controller
     {
         $this->adminOnly($request);
         $data = $request->validate(['quantity' => 'required|integer|min:1']);
-        $wholesaleProduct->increment('quantity', $data['quantity']);
+        
+        $wholesaleProduct->quantity += $data['quantity'];
+        $wholesaleProduct->last_added_qty = $data['quantity'];
+        $wholesaleProduct->save();
+        
         return response()->json($wholesaleProduct->fresh('units'));
     }
 
