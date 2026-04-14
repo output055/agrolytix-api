@@ -1,58 +1,198 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🌿 Agrolytix API — Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Agrolytix API** is the Laravel 11 REST API powering the Agrolytix agribusiness inventory management system. It handles authentication, product management, point-of-sale operations, sales tracking, debt management, and financial reporting.
 
-## About Laravel
+> **Frontend**: Paired with [`agrolytix`](../agrolytix) — Angular 21 SPA.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠 Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| | |
+|---|---|
+| Framework | Laravel 11 |
+| Auth | Laravel Sanctum (token-based) |
+| Database | MySQL (`agrolytix_api`) |
+| Port | `8001` (`php artisan serve --port=8001`) |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🚀 Getting Started
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Prerequisites
+- PHP ≥ 8.2
+- Composer
+- MySQL (XAMPP or native)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
+### Install & Run
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env      # already configured for agrolytix_api DB
+php artisan key:generate
+php artisan migrate
+php artisan db:seed        # seeds admin user
+php artisan serve --port=8001
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Database
+- DB Name: `agrolytix_api`
+- DB User: `root` / no password (XAMPP default)
+- Create the database in phpMyAdmin or via:
+  ```sql
+  CREATE DATABASE agrolytix_api;
+  ```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 👤 Roles
 
-## Code of Conduct
+| Role | Permissions |
+|---|---|
+| **Admin** | Full access to all endpoints |
+| **Worker** | POS (checkout), sales read, debt payment only |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 📋 API Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/login` | Login — returns token + user |
+| POST | `/api/logout` | Invalidate token |
+| GET | `/api/user` | Get authenticated user |
 
-## License
+### Dashboard
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/dashboard/stats` | Today's sales, revenue, profit, debts, low-stock count |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Retail Inventory
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/products` | List all retail products |
+| POST | `/api/products` | Create product (Admin) |
+| PUT | `/api/products/{id}` | Update product (Admin) |
+| DELETE | `/api/products/{id}` | Delete product (Admin) |
+| PATCH | `/api/products/{id}/restock` | Add stock quantity (Admin) |
+
+### Wholesale Inventory
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/wholesale-products` | List wholesale products |
+| POST | `/api/wholesale-products` | Create (Admin) |
+| PUT | `/api/wholesale-products/{id}` | Update (Admin) |
+| DELETE | `/api/wholesale-products/{id}` | Delete (Admin) |
+| PATCH | `/api/wholesale-products/{id}/restock` | Restock (Admin) |
+
+### Retail POS
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/pos/retail/checkout` | Process retail checkout, deduct stock, save sales |
+
+### Wholesale POS
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/pos/wholesale/checkout` | Process wholesale checkout, track client debt |
+
+### Sales
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/sales/retail` | Retail sales history (filterable by date) |
+| GET | `/api/sales/wholesale` | Wholesale sales history |
+| POST | `/api/sales/wholesale/{id}/pay` | Record debt payment |
+
+### Reversals
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/reversals` | Reverse a retail sale, restore stock (Admin) |
+| GET | `/api/reversals` | List all reversals (Admin) |
+
+### Clients
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/clients` | List wholesale clients (Admin) |
+| POST | `/api/clients` | Add client (Admin) |
+| PUT | `/api/clients/{id}` | Update client (Admin) |
+| DELETE | `/api/clients/{id}` | Delete client (Admin) |
+
+### Workers
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/workers` | List workers (Admin) |
+| POST | `/api/workers` | Create worker account (Admin) |
+| PUT | `/api/workers/{id}` | Update worker (Admin) |
+| PATCH | `/api/workers/{id}/status` | Activate/deactivate (Admin) |
+| DELETE | `/api/workers/{id}` | Remove worker (Admin) |
+
+### Reports
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/reports/financial` | Revenue, profit, debts by date range (Admin) |
+
+---
+
+## 🗂 Database Schema
+
+| Table | Purpose |
+|---|---|
+| `users` | Admin + worker accounts |
+| `personal_access_tokens` | Sanctum tokens |
+| `products` | Retail product catalog & stock |
+| `product_units` | Unit/bulk pricing variants per product |
+| `wholesale_products` | Wholesale product catalog & stock |
+| `wholesale_product_units` | Unit pricing for wholesale |
+| `retail_sales` | Retail checkout records |
+| `retail_sale_items` | Line items per retail sale |
+| `wholesale_sales` | Wholesale checkout records |
+| `wholesale_sale_items` | Line items per wholesale sale |
+| `client_sales` | Wholesale invoice headers |
+| `clients` | Wholesale customer accounts |
+| `reversals` | Reversed retail sale log |
+| `debts` | Wholesale debt payment history |
+
+---
+
+## 📋 Feature Status
+
+### ✅ Built & Functional
+| Item | Status |
+|---|---|
+| Sanctum auth (login/logout/user) | ✅ Complete |
+| `routes/api.php` | ✅ Complete |
+| All 18 database migrations | ✅ Migrated |
+| Admin user seeded | ✅ Complete |
+| `ProductController` (CRUD + restock + units) | ✅ Complete |
+| `WholesaleProductController` | ✅ Complete |
+| `RetailPosController` (checkout, stock deduct) | ✅ Complete |
+| `WholesalePosController` (checkout, debt) | ✅ Complete |
+| `RetailSaleController` (history, date filter) | ✅ Complete |
+| `WholesaleSaleController` (history + pay debt) | ✅ Complete |
+| `ReversalController` (reverse + restore stock) | ✅ Complete |
+| `ClientController` (CRUD) | ✅ Complete |
+| `WorkerController` (CRUD + status) | ✅ Complete |
+| `DashboardController` (today's KPIs) | ✅ Complete |
+| `ReportController` (date-range financial) | ✅ Complete |
+| All Models (11 models + relationships) | ✅ Complete |
+| Unit/bulk pricing model (`product_units`) | ✅ Complete |
+| CORS configured (allows all origins) | ✅ Complete |
+
+### 📅 Planned (Future)
+- [ ] DB seeder for sample products/clients/sales (for demo)
+- [ ] Activity logging (who did what, when)
+- [ ] Password reset / email verification
+
+---
+
+## 📦 Unit / Bulk Pricing Design
+
+Each product has a `product_units` table with entries like:
+
+```
+| unit_name | quantity_in_base | price   | is_bulk | bulk_discount_pct |
+|-----------|-----------------|---------|---------|------------------|
+| Bottle    | 1               | 500.00  | false   | 0                |
+| Box       | 12              | 5400.00 | true    | 10               |
+```
+
+At checkout, the POS sends the selected unit, and the API records the effective price and quantity deducted from base stock.
