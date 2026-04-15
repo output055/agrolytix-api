@@ -20,5 +20,11 @@ class DatabaseSeeder extends Seeder
                 'status'   => 'active',
             ]
         );
+
+        $this->call([
+            RetailProductSeeder::class,
+            WholesaleProductSeeder::class,
+        ]);
     }
 }
+

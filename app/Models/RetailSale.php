@@ -11,7 +11,7 @@ class RetailSale extends Model
 {
     protected $fillable = [
         'user_id', 'receipt_number', 'total_amount',
-        'total_cost', 'profit', 'status',
+        'total_cost', 'profit', 'payment_method', 'momo_number', 'status',
     ];
 
     public function worker(): BelongsTo

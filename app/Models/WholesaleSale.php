@@ -10,7 +10,7 @@ class WholesaleSale extends Model
 {
     protected $fillable = [
         'user_id', 'client_id', 'receipt_number',
-        'total_amount', 'total_cost', 'profit',
+        'total_amount', 'total_cost', 'profit', 'payment_method', 'momo_number',
         'amount_paid', 'debt', 'status',
     ];
 

@@ -21,6 +21,8 @@ class RetailPosController extends Controller
     public function checkout(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'payment_method'            => 'required|string',
+            'momo_number'               => 'nullable|string',
             'items'                     => 'required|array|min:1',
             'items.*.product_id'        => 'required|exists:products,id',
             'items.*.unit_name'         => 'required|string',
@@ -53,6 +55,8 @@ class RetailPosController extends Controller
                 'total_amount'   => 0,
                 'total_cost'     => 0,
                 'profit'         => 0,
+                'payment_method' => $data['payment_method'],
+                'momo_number'    => $data['momo_number'] ?? null,
                 'status'         => 'completed',
             ]);
 

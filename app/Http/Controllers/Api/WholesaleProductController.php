@@ -6,12 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\WholesaleProduct;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class WholesaleProductController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(WholesaleProduct::with('units')->orderBy('name')->get());
+        $products = WholesaleProduct::with('units')
+            ->leftJoin(
+                DB::raw('(SELECT wholesale_product_id, SUM(quantity_base) as sales_count FROM wholesale_sale_items GROUP BY wholesale_product_id) as si'),
+                'wholesale_products.id', '=', 'si.wholesale_product_id'
+            )
+            ->select('wholesale_products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'))
+            ->orderByDesc('sales_count')
+            ->orderBy('wholesale_products.name')
+            ->get();
+
+        return response()->json($products);
     }
 
     public function store(Request $request): JsonResponse

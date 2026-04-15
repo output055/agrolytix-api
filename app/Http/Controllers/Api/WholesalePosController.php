@@ -23,6 +23,8 @@ class WholesalePosController extends Controller
     {
         $data = $request->validate([
             'client_id'                 => 'required|exists:clients,id',
+            'payment_method'            => 'required|string',
+            'momo_number'               => 'nullable|string',
             'amount_paid'               => 'required|numeric|min:0',
             'items'                     => 'required|array|min:1',
             'items.*.wholesale_product_id' => 'required|exists:wholesale_products,id',
@@ -56,6 +58,8 @@ class WholesalePosController extends Controller
                 'total_amount'   => 0,
                 'total_cost'     => 0,
                 'profit'         => 0,
+                'payment_method' => $data['payment_method'],
+                'momo_number'    => $data['momo_number'] ?? null,
                 'amount_paid'    => $data['amount_paid'],
                 'debt'           => 0,
                 'status'         => 'completed',

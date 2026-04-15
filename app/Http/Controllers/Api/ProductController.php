@@ -6,12 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
     public function index(): JsonResponse
     {
-        $products = Product::with('units')->orderBy('name')->get();
+        $products = Product::with('units')
+            ->leftJoin(
+                DB::raw('(SELECT product_id, SUM(quantity_base) as sales_count FROM retail_sale_items GROUP BY product_id) as si'),
+                'products.id', '=', 'si.product_id'
+            )
+            ->select('products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'))
+            ->orderByDesc('sales_count')
+            ->orderBy('products.name')
+            ->get();
+
         return response()->json($products);
     }
 
