@@ -22,6 +22,7 @@ class User extends Authenticatable
         'status',
         'last_login_at',
         'contact',
+        'permissions',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -32,6 +33,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_login_at'     => 'datetime',
             'password'          => 'hashed',
+            'permissions'       => 'array',
         ];
     }
 

@@ -21,13 +21,15 @@ class WorkerController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
         $data = $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'contact'  => 'nullable|string',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|min:6',
+            'contact'     => 'nullable|string',
+            'permissions' => 'nullable|array',
         ]);
-        $data['role']     = 'Worker';
-        $data['status']   = 'active';
-        $data['password'] = Hash::make($data['password']);
+        $data['role']        = 'Worker';
+        $data['status']      = 'active';
+        $data['password']    = Hash::make($data['password']);
+        $data['permissions'] = $data['permissions'] ?? [];
         return response()->json(User::create($data), 201);
     }
 
@@ -36,14 +38,18 @@ class WorkerController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
         $data = $request->validate([
             'name'     => 'sometimes|string|max:255',
-            'email'    => 'sometimes|email|unique:users,email,' . $worker->id,
-            'password' => 'nullable|min:6',
-            'contact'  => 'nullable|string',
+            'email'       => 'sometimes|email|unique:users,email,' . $worker->id,
+            'password'    => 'nullable|min:6',
+            'contact'     => 'nullable|string',
+            'permissions' => 'nullable|array',
         ]);
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
+        }
+        if (!isset($data['permissions'])) {
+            $data['permissions'] = [];
         }
         $worker->update($data);
         return response()->json($worker->fresh());
