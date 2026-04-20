@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\LogsActivity;
+
 class Product extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'name', 'category', 'description',
         'cost_price', 'sell_price', 'quantity',

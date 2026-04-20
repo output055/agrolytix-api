@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\LogsActivity;
+
 class Reversal extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'retail_sale_id', 'user_id', 'reason', 'reversed_items',
         'amount_reversed', 'cost_reversed', 'is_partial',

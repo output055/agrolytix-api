@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ReversalController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\WorkerController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\AuditLogController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
@@ -57,4 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Reports (Admin)
     Route::get('/reports/financial', [ReportController::class, 'financial']);
+
+    // Audit Logs (Admin)
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
 });

@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\LogsActivity;
+
 class WholesaleSale extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'user_id', 'client_id', 'receipt_number',
         'total_amount', 'total_cost', 'profit', 'payment_method', 'momo_number',
