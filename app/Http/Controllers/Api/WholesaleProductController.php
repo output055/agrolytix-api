@@ -10,20 +10,48 @@ use Illuminate\Support\Facades\DB;
 
 class WholesaleProductController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $products = WholesaleProduct::with('units')
+        $query = WholesaleProduct::with('units')
             ->leftJoin(
                 DB::raw('(SELECT wholesale_product_id, SUM(quantity_base) as sales_count FROM wholesale_sale_items GROUP BY wholesale_product_id) as si'),
                 'wholesale_products.id', '=', 'si.wholesale_product_id'
             )
-            ->select('wholesale_products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'))
-            ->orderByDesc('sales_count')
-            ->orderBy('wholesale_products.name')
-            ->get();
+            ->select('wholesale_products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'));
 
-        return response()->json($products);
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('wholesale_products.name', 'like', "%{$search}%")
+                  ->orWhere('wholesale_products.category', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('sort_column') && $request->input('sort_column')) {
+            $column = $request->input('sort_column');
+            $direction = $request->input('sort_direction', 'asc');
+            $query->orderBy($column, $direction);
+        } else {
+            $query->orderByDesc('sales_count')
+                  ->orderBy('wholesale_products.name');
+        }
+
+        if ($request->has('paginate')) {
+            $perPage = $request->input('per_page', 10);
+            $paginated = $query->paginate($perPage);
+            
+            $stats = [
+                'total_cost_value' => (float) WholesaleProduct::sum(DB::raw('quantity * cost_price')),
+                'total_selling_value' => (float) WholesaleProduct::sum(DB::raw('quantity * sell_price')),
+                'low_stock_count' => (int) WholesaleProduct::whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
+            ];
+            
+            return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
+        }
+
+        return response()->json($query->get());
     }
+
 
     public function store(Request $request): JsonResponse
     {

@@ -10,20 +10,48 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $products = Product::with('units')
+        $query = Product::with('units')
             ->leftJoin(
                 DB::raw('(SELECT product_id, SUM(quantity_base) as sales_count FROM retail_sale_items GROUP BY product_id) as si'),
                 'products.id', '=', 'si.product_id'
             )
-            ->select('products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'))
-            ->orderByDesc('sales_count')
-            ->orderBy('products.name')
-            ->get();
+            ->select('products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'));
 
-        return response()->json($products);
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('products.name', 'like', "%{$search}%")
+                  ->orWhere('products.category', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('sort_column') && $request->input('sort_column')) {
+            $column = $request->input('sort_column');
+            $direction = $request->input('sort_direction', 'asc');
+            $query->orderBy($column, $direction);
+        } else {
+            $query->orderByDesc('sales_count')
+                  ->orderBy('products.name');
+        }
+
+        if ($request->has('paginate')) {
+            $perPage = $request->input('per_page', 10);
+            $paginated = $query->paginate($perPage);
+            
+            $stats = [
+                'total_cost_value' => (float) Product::sum(DB::raw('quantity * cost_price')),
+                'total_selling_value' => (float) Product::sum(DB::raw('quantity * sell_price')),
+                'low_stock_count' => (int) Product::whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
+            ];
+            
+            return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
+        }
+
+        return response()->json($query->get());
     }
+
 
     public function store(Request $request): JsonResponse
     {
