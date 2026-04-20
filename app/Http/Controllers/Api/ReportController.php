@@ -21,12 +21,16 @@ class ReportController extends Controller
 
         $retail = RetailSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
-            ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit')
+            ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit, SUM(total_amount - profit) as cost')
             ->first();
 
         $wholesale = WholesaleSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
-            ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit, SUM(debt) as outstanding_debt')
+            ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit, SUM(total_amount - profit) as cost, SUM(debt) as outstanding_debt')
+            ->first();
+
+        $reversals = \App\Models\Reversal::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->selectRaw('COUNT(*) as count, SUM(amount_reversed) as amount, SUM(cost_reversed) as cost')
             ->first();
 
         $totalDebt = Client::sum('total_debt');
@@ -39,6 +43,7 @@ class ReportController extends Controller
             'period' => ['from' => $from, 'to' => $to],
             'retail' => $retail,
             'wholesale' => $wholesale,
+            'reversals' => $reversals,
             'total_outstanding_debt' => $totalDebt,
             'low_stock_products' => $lowStock,
         ]);

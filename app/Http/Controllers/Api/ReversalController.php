@@ -31,6 +31,11 @@ class ReversalController extends Controller
 
         $sale = RetailSale::with('items')->findOrFail($data['retail_sale_id']);
 
+        // Enforce 24-hour reversal limit
+        if ($sale->created_at->diffInHours(now()) >= 24) {
+            return response()->json(['message' => 'Reversal period has expired'], 422);
+        }
+
         if ($sale->status === 'reversed') {
             return response()->json(['message' => 'This sale has already been reversed.'], 422);
         }
