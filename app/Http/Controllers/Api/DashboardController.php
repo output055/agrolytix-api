@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\WholesaleProduct;
 use App\Models\RetailSale;
 use App\Models\WholesaleSale;
 use App\Models\Client;
@@ -34,7 +35,27 @@ class DashboardController extends Controller
 
         $totalDebt = Client::sum('total_debt');
 
-        $lowStockCount = Product::whereRaw('quantity <= low_stock_alert')->count();
+        $lowStockCount = Product::whereRaw('quantity <= low_stock_alert')->count() + 
+                         WholesaleProduct::whereRaw('quantity <= low_stock_alert')->count();
+
+        $retailAttention = Product::whereRaw('quantity <= low_stock_alert')
+            ->select('id', 'name', 'quantity', 'low_stock_alert', 'base_unit')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($p) => array_merge($p->toArray(), ['type' => 'Retail']));
+
+        $wholesaleAttention = WholesaleProduct::whereRaw('quantity <= low_stock_alert')
+            ->select('id', 'name', 'quantity', 'low_stock_alert', 'base_unit')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($p) => array_merge($p->toArray(), ['type' => 'Wholesale']));
+
+        $needsAttention = $retailAttention->concat($wholesaleAttention)
+            ->sortBy('quantity')
+            ->take(10)
+            ->values();
 
         return response()->json([
             'retail_revenue'    => $retailRevenue,
@@ -43,6 +64,7 @@ class DashboardController extends Controller
             'wholesale_profit'  => $wholesaleProfit,
             'total_debt'        => $totalDebt,
             'low_stock_count'   => $lowStockCount,
+            'needs_attention'   => $needsAttention,
             'date'              => $today->toDateString(),
         ]);
     }
