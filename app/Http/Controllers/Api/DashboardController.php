@@ -8,6 +8,7 @@ use App\Models\WholesaleProduct;
 use App\Models\RetailSale;
 use App\Models\WholesaleSale;
 use App\Models\Client;
+use App\Models\Expense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 
@@ -34,6 +35,8 @@ class DashboardController extends Controller
             ->sum('profit');
 
         $totalDebt = Client::sum('total_debt');
+
+        $todayExpenses = Expense::whereDate('expense_date', $today)->sum('amount');
 
         $lowStockCount = Product::whereRaw('quantity <= low_stock_alert')->count() + 
                          WholesaleProduct::whereRaw('quantity <= low_stock_alert')->count();
@@ -63,6 +66,7 @@ class DashboardController extends Controller
             'wholesale_revenue' => $wholesaleRevenue,
             'wholesale_profit'  => $wholesaleProfit,
             'total_debt'        => $totalDebt,
+            'today_expenses'    => $todayExpenses,
             'low_stock_count'   => $lowStockCount,
             'needs_attention'   => $needsAttention,
             'date'              => $today->toDateString(),

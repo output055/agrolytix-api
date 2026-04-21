@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\WorkerController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\ExpenseController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
@@ -62,4 +63,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Audit Logs (Admin)
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
     Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
+
+    // Expenses (all users can create/view own; admins can view all and delete)
+    Route::get('/expenses', [ExpenseController::class, 'index']);
+    Route::get('/expenses/today-stats', [ExpenseController::class, 'stats']);
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 });
