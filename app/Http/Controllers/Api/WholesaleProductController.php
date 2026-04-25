@@ -13,11 +13,7 @@ class WholesaleProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = WholesaleProduct::with('units')
-            ->leftJoin(
-                DB::raw('(SELECT wholesale_product_id, SUM(quantity_base) as sales_count FROM wholesale_sale_items GROUP BY wholesale_product_id) as si'),
-                'wholesale_products.id', '=', 'si.wholesale_product_id'
-            )
-            ->select('wholesale_products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'));
+            ->withSum('wholesaleSaleItems as sales_count', 'quantity_base');
 
         if ($request->has('search')) {
             $search = $request->input('search');

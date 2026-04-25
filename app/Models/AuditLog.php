@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToBusiness;
 
 class AuditLog extends Model
 {
+    use BelongsToBusiness;
     protected $fillable = [
         'user_id',
         'action_type',
@@ -17,6 +19,7 @@ class AuditLog extends Model
         'ip_address',
         'user_agent',
         'metadata',
+        'business_id',
     ];
 
     protected $casts = [

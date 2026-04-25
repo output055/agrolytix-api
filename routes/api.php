@@ -16,13 +16,29 @@ use App\Http\Controllers\Api\WorkerController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\SubscriptionController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::middleware('auth:sanctum')->group(function () {
+// Paystack webhook (must be public, before auth middleware)
+Route::post('/webhooks/paystack', [SubscriptionController::class, 'webhook']);
+
+// Paystack callback redirect (called by Paystack after payment)
+Route::get('/subscription/callback', [SubscriptionController::class, 'callback']);
+
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Subscription status & initiate (NOT subscription-gated — user needs these to pay)
+    Route::get('/subscription',          [SubscriptionController::class, 'status']);
+    Route::post('/subscription/initiate', [SubscriptionController::class, 'initiate']);
+});
+
+// All other routes are subscription-gated
+Route::middleware(['auth:sanctum', 'tenant', 'subscription'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

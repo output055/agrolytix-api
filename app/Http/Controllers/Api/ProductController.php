@@ -13,11 +13,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::with('units')
-            ->leftJoin(
-                DB::raw('(SELECT product_id, SUM(quantity_base) as sales_count FROM retail_sale_items GROUP BY product_id) as si'),
-                'products.id', '=', 'si.product_id'
-            )
-            ->select('products.*', DB::raw('COALESCE(si.sales_count, 0) as sales_count'));
+            ->withSum('retailSaleItems as sales_count', 'quantity_base');
 
         if ($request->has('search')) {
             $search = $request->input('search');

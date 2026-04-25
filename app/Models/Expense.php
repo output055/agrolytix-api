@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToBusiness;
 
 class Expense extends Model
 {
+    use BelongsToBusiness;
     protected $fillable = [
         'title',
         'amount',
@@ -14,6 +16,7 @@ class Expense extends Model
         'note',
         'expense_date',
         'recorded_by',
+        'business_id',
     ];
 
     protected $casts = [

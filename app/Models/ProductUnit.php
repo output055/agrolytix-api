@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToBusiness;
 
 class ProductUnit extends Model
 {
+    use BelongsToBusiness;
     protected $fillable = [
         'product_id', 'unit_name', 'quantity_in_base',
-        'price', 'is_bulk', 'bulk_discount_pct',
+        'price', 'is_bulk', 'bulk_discount_pct', 'business_id',
     ];
 
     protected $casts = ['is_bulk' => 'boolean'];

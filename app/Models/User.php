@@ -8,10 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToBusiness;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, LogsActivity;
+    use HasFactory, Notifiable, HasApiTokens, LogsActivity, BelongsToBusiness;
 
     public const ROLE_ADMIN = 'Admin';
     public const ROLE_WORKER = 'Worker';
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'last_login_at',
         'contact',
         'permissions',
+        'business_id',
     ];
 
     protected $hidden = ['password', 'remember_token'];

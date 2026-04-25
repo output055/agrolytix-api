@@ -8,14 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToBusiness;
 
 class RetailSale extends Model
 {
-    use LogsActivity;
+    use LogsActivity, BelongsToBusiness;
 
     protected $fillable = [
         'user_id', 'receipt_number', 'total_amount',
-        'total_cost', 'profit', 'payment_method', 'momo_number', 'status',
+        'total_cost', 'profit', 'payment_method', 'momo_number', 'status', 'business_id',
     ];
 
     public function worker(): BelongsTo

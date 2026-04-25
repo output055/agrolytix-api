@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToBusiness;
 
 class WholesaleSale extends Model
 {
-    use LogsActivity;
+    use LogsActivity, BelongsToBusiness;
 
     protected $fillable = [
         'user_id', 'client_id', 'receipt_number',
         'total_amount', 'total_cost', 'profit', 'payment_method', 'momo_number',
-        'amount_paid', 'debt', 'status',
+        'amount_paid', 'debt', 'status', 'business_id',
     ];
 
     public function worker(): BelongsTo
