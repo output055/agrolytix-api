@@ -9,6 +9,7 @@ class Business extends Model
     protected $fillable = [
         'name', 'email', 'phone', 'address', 'trial_ends_at',
         'subscription_status', 'subscription_plan',
+        'total_revenue', 'last_payment_date', 'last_payment_status',
         'paystack_customer_code', 'paystack_subscription_code',
         'paystack_email_token', 'subscription_ends_at',
     ];
@@ -16,6 +17,7 @@ class Business extends Model
     protected $casts = [
         'trial_ends_at'       => 'datetime',
         'subscription_ends_at' => 'datetime',
+        'last_payment_date'    => 'datetime',
     ];
 
     /** Returns true if the business is allowed to use the platform */

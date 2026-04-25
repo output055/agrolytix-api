@@ -91,3 +91,16 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription'])->group(function ()
     Route::post('/expenses', [ExpenseController::class, 'store']);
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 });
+
+// Super Admin Only
+Route::middleware(['auth:sanctum', 'super_admin'])->group(function () {
+    Route::get('/super-admin/stats', [\App\Http\Controllers\Api\SuperAdminController::class, 'stats']);
+    Route::get('/super-admin/businesses', [\App\Http\Controllers\Api\SuperAdminController::class, 'index']);
+    Route::get('/super-admin/businesses/{id}/details', [\App\Http\Controllers\Api\SuperAdminController::class, 'businessDetails']);
+    Route::put('/super-admin/businesses/{id}/subscription', [\App\Http\Controllers\Api\SuperAdminController::class, 'updateSubscription']);
+    Route::post('/super-admin/businesses/{id}/suspend', [\App\Http\Controllers\Api\SuperAdminController::class, 'suspend']);
+    Route::post('/super-admin/businesses/{id}/activate', [\App\Http\Controllers\Api\SuperAdminController::class, 'activate']);
+    Route::post('/super-admin/businesses/{id}/extend-trial', [\App\Http\Controllers\Api\SuperAdminController::class, 'extendTrial']);
+    Route::post('/super-admin/businesses/{id}/change-plan', [\App\Http\Controllers\Api\SuperAdminController::class, 'changePlan']);
+    Route::get('/super-admin/payments', [\App\Http\Controllers\Api\SuperAdminController::class, 'payments']);
+});

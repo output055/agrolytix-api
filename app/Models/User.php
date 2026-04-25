@@ -14,8 +14,9 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, LogsActivity, BelongsToBusiness;
 
-    public const ROLE_ADMIN = 'Admin';
-    public const ROLE_WORKER = 'Worker';
+    public const ROLE_ADMIN       = 'Admin';
+    public const ROLE_WORKER      = 'Worker';
+    public const ROLE_SUPER_ADMIN = 'SuperAdmin';
 
     protected $fillable = [
         'name',
@@ -49,5 +50,10 @@ class User extends Authenticatable
     public function isWorker(): bool
     {
         return $this->role === self::ROLE_WORKER;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
     }
 }

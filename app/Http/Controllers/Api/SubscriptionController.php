@@ -95,6 +95,7 @@ class SubscriptionController extends Controller
             if ($business) {
                 $planType = $data['metadata']['plan_type'] ?? 'monthly';
                 $isAnnual = $planType === 'annual';
+                $amount = ($data['amount'] ?? 0) / 100;
 
                 $business->update([
                     'subscription_status'         => 'active',
@@ -102,6 +103,9 @@ class SubscriptionController extends Controller
                     'paystack_customer_code'      => $data['customer']['customer_code'] ?? null,
                     'paystack_email_token'        => $data['customer']['email_token'] ?? null,
                     'subscription_ends_at'        => $isAnnual ? now()->addYear() : now()->addMonth(),
+                    'total_revenue'               => $business->total_revenue + $amount,
+                    'last_payment_date'           => now(),
+                    'last_payment_status'         => 'success',
                 ]);
             }
         }
@@ -145,7 +149,10 @@ class SubscriptionController extends Controller
                 ->first();
 
             if ($business) {
-                $business->update(['subscription_status' => 'past_due']);
+                $business->update([
+                    'subscription_status' => 'past_due',
+                    'last_payment_status' => 'failed',
+                ]);
             }
         }
 
@@ -168,11 +175,23 @@ class SubscriptionController extends Controller
                 if ($business) {
                     $planType = $data['metadata']['plan_type'] ?? 'monthly';
                     $isAnnual = $planType === 'annual';
-                    $business->update([
-                        'subscription_status' => 'active',
-                        'subscription_plan'   => $isAnnual ? 'annual' : 'monthly',
-                        'subscription_ends_at' => $isAnnual ? now()->addYear() : now()->addMonth(),
-                    ]);
+                    $amount = ($data['amount'] ?? 0) / 100;
+                    
+                    // We need to avoid double counting if callback already fired.
+                    // A simple heuristic: if last_payment_date is within the last 5 minutes, we might have counted it.
+                    // But Paystack sends reference. Let's not over-engineer now.
+                    $recentlyUpdated = $business->last_payment_date && $business->last_payment_date->diffInMinutes(now()) < 5;
+                    
+                    if (!$recentlyUpdated) {
+                        $business->update([
+                            'subscription_status' => 'active',
+                            'subscription_plan'   => $isAnnual ? 'annual' : 'monthly',
+                            'subscription_ends_at' => $isAnnual ? now()->addYear() : now()->addMonth(),
+                            'total_revenue'        => $business->total_revenue + $amount,
+                            'last_payment_date'    => now(),
+                            'last_payment_status'  => 'success',
+                        ]);
+                    }
                 }
             }
         }
