@@ -58,7 +58,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/workers/{worker}/status', [WorkerController::class, 'updateStatus']);
 
     // Reports (Admin)
-    Route::get('/reports/financial', [ReportController::class, 'financial']);
+    Route::get('/reports/financial',          [ReportController::class, 'financial']);
+    Route::get('/reports/revenue',            [ReportController::class, 'revenueReport']);
+    Route::get('/reports/sales-insights',     [ReportController::class, 'salesInsights']);
+    Route::get('/reports/expenses',           [ReportController::class, 'expenseReport']);
+    Route::get('/reports/debt-analysis',      [ReportController::class, 'debtAnalysis']);
+    Route::get('/reports/inventory-insights', [ReportController::class, 'inventoryInsights']);
 
     // Audit Logs (Admin)
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
