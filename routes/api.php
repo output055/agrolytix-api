@@ -17,8 +17,10 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\ContactController;
 
 // Public
+Route::post('/contact', [ContactController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
@@ -103,4 +105,6 @@ Route::middleware(['auth:sanctum', 'super_admin'])->group(function () {
     Route::post('/super-admin/businesses/{id}/extend-trial', [\App\Http\Controllers\Api\SuperAdminController::class, 'extendTrial']);
     Route::post('/super-admin/businesses/{id}/change-plan', [\App\Http\Controllers\Api\SuperAdminController::class, 'changePlan']);
     Route::get('/super-admin/payments', [\App\Http\Controllers\Api\SuperAdminController::class, 'payments']);
+    Route::get('/super-admin/messages', [\App\Http\Controllers\Api\SuperAdminController::class, 'messages']);
+    Route::patch('/super-admin/messages/{id}/read', [\App\Http\Controllers\Api\SuperAdminController::class, 'markMessageRead']);
 });

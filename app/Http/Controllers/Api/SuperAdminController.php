@@ -276,4 +276,19 @@ class SuperAdminController extends Controller
         $business->update(['subscription_plan' => $request->plan]);
         return response()->json(['message' => 'Plan changed successfully']);
     }
+
+    /** GET /api/super-admin/messages */
+    public function messages(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $messages = \App\Models\ContactMessage::latest()->paginate(50);
+        return response()->json($messages);
+    }
+
+    /** PATCH /api/super-admin/messages/{id}/read */
+    public function markMessageRead($id): \Illuminate\Http\JsonResponse
+    {
+        $message = \App\Models\ContactMessage::findOrFail($id);
+        $message->update(['read_at' => now()]);
+        return response()->json(['message' => 'Message marked as read', 'data' => $message]);
+    }
 }

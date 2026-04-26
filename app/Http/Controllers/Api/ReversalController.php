@@ -19,8 +19,6 @@ class ReversalController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'Admin access required');
-
         $data = $request->validate([
             'retail_sale_id'   => 'required|exists:retail_sales,id',
             'reason'           => 'nullable|string',
