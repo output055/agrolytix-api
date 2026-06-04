@@ -39,7 +39,7 @@ class ExpenseController extends Controller
                   ->orWhere('note', 'like', "%{$search}%");
             });
         }
-        
+
         if ($user->isAdmin() && $workerId = $request->input('worker_id')) {
             $query->where('recorded_by', $workerId);
         }
@@ -62,24 +62,30 @@ class ExpenseController extends Controller
     private function getTodayStats()
     {
         $today = \Illuminate\Support\Carbon::today();
+        $businessId = auth()->user()->business_id;
 
-        $retailRevenue = \App\Models\RetailSale::whereDate('created_at', $today)
+        $retailRevenue = \App\Models\RetailSale::where('business_id', $businessId)
+            ->whereDate('created_at', $today)
             ->where('status', 'completed')
             ->sum('total_amount');
 
-        $retailProfit = \App\Models\RetailSale::whereDate('created_at', $today)
+        $retailProfit = \App\Models\RetailSale::where('business_id', $businessId)
+            ->whereDate('created_at', $today)
             ->where('status', 'completed')
             ->sum('profit');
 
-        $wholesaleRevenue = \App\Models\WholesaleSale::whereDate('created_at', $today)
+        $wholesaleRevenue = \App\Models\WholesaleSale::where('business_id', $businessId)
+            ->whereDate('created_at', $today)
             ->where('status', '!=', 'reversed')
             ->sum('total_amount');
 
-        $wholesaleProfit = \App\Models\WholesaleSale::whereDate('created_at', $today)
+        $wholesaleProfit = \App\Models\WholesaleSale::where('business_id', $businessId)
+            ->whereDate('created_at', $today)
             ->where('status', '!=', 'reversed')
             ->sum('profit');
 
-        $todayExpenses = \App\Models\Expense::whereDate('expense_date', $today)->sum('amount');
+        $todayExpenses = \App\Models\Expense::where('business_id', $businessId)
+            ->whereDate('expense_date', $today)->sum('amount');
 
         $totalRevenue = $retailRevenue + $wholesaleRevenue;
         $totalProfit  = $retailProfit + $wholesaleProfit;
@@ -112,10 +118,10 @@ class ExpenseController extends Controller
         ]);
 
         $stats = $this->getTodayStats();
-        
+
         if ($data['amount'] > $stats['net_revenue']) {
             return response()->json([
-                'message' => 'Insufficient funds. Total revenue for today is GH₵' . number_format($stats['total_revenue'], 2) . 
+                'message' => 'Insufficient funds. Total revenue for today is GH₵' . number_format($stats['total_revenue'], 2) .
                              ', and remaining balance is GH₵' . number_format($stats['net_revenue'], 2) . '.'
             ], 422);
         }

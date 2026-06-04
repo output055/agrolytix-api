@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\Product;
+use App\Models\ProductUnit;
 use App\Models\WholesaleProduct;
+use App\Models\WholesaleProductUnit;
 use App\Models\StockTransfer;
 use App\Models\Scopes\BusinessScope;
 use Illuminate\Http\Request;
@@ -77,6 +79,9 @@ class StockTransferController extends Controller
         $data = $request->validate([
             'from_type'          => 'required|in:retail,wholesale',
             'from_product_id'    => 'required|integer|min:1',
+            'source_unit_id'     => 'nullable|integer|min:1',
+            'source_unit_name'   => 'nullable|string|max:255',
+            'source_unit_quantity_in_base' => 'nullable|integer|min:1',
             'to_type'            => 'required|in:retail,wholesale',
             'to_product_id'      => 'nullable|integer|min:1',
             'to_business_id'     => 'nullable|integer|exists:businesses,id',
@@ -107,14 +112,17 @@ class StockTransferController extends Controller
             // --- Load & lock source product (always scoped to current business) ---
             $sourceModel = $data['from_type'] === 'retail' ? Product::class : WholesaleProduct::class;
             $source = $sourceModel::lockForUpdate()->findOrFail($data['from_product_id']);
+            $unitMeta = $this->resolveSourceUnit($source, $data);
+            $displayQuantity = (int) $data['quantity'];
+            $baseQuantity = $displayQuantity * $unitMeta['quantity_in_base'];
 
             // Hard-block: ensure enough stock
-            if ($source->quantity < $data['quantity']) {
-                abort(422, "Insufficient stock. Available: {$source->quantity} {$source->base_unit}(s).");
+            if ($source->quantity < $baseQuantity) {
+                abort(422, "Insufficient stock. Available: {$source->quantity} {$source->base_unit}(s). Required: {$baseQuantity} {$source->base_unit}(s).");
             }
 
             // Decrement source
-            $source->quantity -= $data['quantity'];
+            $source->quantity -= $baseQuantity;
             $source->save();
 
             // --- Load or auto-create destination product ---
@@ -134,7 +142,7 @@ class StockTransferController extends Controller
 
             if ($dest) {
                 // Existing destination product — just add stock
-                $dest->quantity += $data['quantity'];
+                $dest->quantity += $baseQuantity;
                 $dest->save();
             } else {
                 // Auto-create destination product in target business
@@ -146,10 +154,11 @@ class StockTransferController extends Controller
                     'cost_price'      => $source->cost_price,
                     'sell_price'      => $source->sell_price,
                     'base_unit'       => $source->base_unit,
-                    'quantity'        => $data['quantity'],
+                    'quantity'        => $baseQuantity,
                     'low_stock_alert' => $source->low_stock_alert,
                     'business_id'     => $toBusinessId,
                 ]);
+                $this->copyUnits($source, $dest, $toBusinessId);
                 $autoCreated = true;
             }
 
@@ -159,12 +168,17 @@ class StockTransferController extends Controller
                 'from_type'         => $data['from_type'],
                 'from_product_id'   => $source->id,
                 'from_product_name' => $source->name,
+                'source_unit_id'    => $unitMeta['id'],
+                'source_unit_name'  => $unitMeta['name'],
+                'source_unit_quantity_in_base' => $unitMeta['quantity_in_base'],
+                'source_base_unit'  => $source->base_unit,
                 'to_type'           => $data['to_type'],
                 'to_product_id'     => $dest->id,
                 'to_product_name'   => $dest->name,
                 'to_business_id'    => $isCrossBranch ? $toBusinessId : null,
                 'auto_created'      => $autoCreated,
-                'quantity'          => $data['quantity'],
+                'display_quantity'  => $displayQuantity,
+                'quantity'          => $baseQuantity,
                 'note'              => $data['note'] ?? null,
                 'transferred_by'    => $request->user()->id,
             ]);
@@ -178,6 +192,49 @@ class StockTransferController extends Controller
         });
 
         return response()->json($result, 201);
+    }
+
+    private function resolveSourceUnit(Product|WholesaleProduct $source, array $data): array
+    {
+        if (!empty($data['source_unit_id'])) {
+            $unitModel = $data['from_type'] === 'retail' ? ProductUnit::class : WholesaleProductUnit::class;
+            $foreignKey = $data['from_type'] === 'retail' ? 'product_id' : 'wholesale_product_id';
+            $unit = $unitModel::withoutGlobalScope(BusinessScope::class)
+                ->where($foreignKey, $source->id)
+                ->findOrFail($data['source_unit_id']);
+
+            return [
+                'id' => $unit->id,
+                'name' => $unit->unit_name,
+                'quantity_in_base' => (int) $unit->quantity_in_base,
+            ];
+        }
+
+        return [
+            'id' => null,
+            'name' => $data['source_unit_name'] ?? $source->base_unit,
+            'quantity_in_base' => (int) ($data['source_unit_quantity_in_base'] ?? 1),
+        ];
+    }
+
+    private function copyUnits(Product|WholesaleProduct $source, Product|WholesaleProduct $dest, int $toBusinessId): void
+    {
+        $source->loadMissing('units');
+
+        if ($source->units->isEmpty()) {
+            return;
+        }
+
+        $units = $source->units->map(fn ($unit) => [
+            'unit_name' => $unit->unit_name,
+            'quantity_in_base' => $unit->quantity_in_base,
+            'price' => $unit->price,
+            'is_bulk' => $unit->is_bulk,
+            'bulk_discount_pct' => $unit->bulk_discount_pct,
+            'business_id' => $toBusinessId,
+        ])->all();
+
+        $dest->units()->createMany($units);
     }
 
     /**

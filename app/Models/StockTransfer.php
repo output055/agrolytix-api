@@ -15,11 +15,16 @@ class StockTransfer extends Model
         'from_type',
         'from_product_id',
         'from_product_name',
+        'source_unit_id',
+        'source_unit_name',
+        'source_unit_quantity_in_base',
+        'source_base_unit',
         'to_type',
         'to_product_id',
         'to_product_name',
         'to_business_id',
         'auto_created',
+        'display_quantity',
         'quantity',
         'note',
         'transferred_by',
@@ -27,6 +32,8 @@ class StockTransfer extends Model
 
     protected $casts = [
         'auto_created' => 'boolean',
+        'display_quantity' => 'integer',
+        'source_unit_quantity_in_base' => 'integer',
         'quantity'     => 'integer',
     ];
 
