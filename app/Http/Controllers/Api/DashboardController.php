@@ -21,7 +21,7 @@ class DashboardController extends Controller
         $businessId = auth()->user()->business_id;
 
         $stats = Cache::remember(
-            "dashboard-stats:v2:{$businessId}:{$today->toDateString()}",
+            "dashboard-stats:v3:{$businessId}:{$today->toDateString()}",
             now()->addMinutes(5),
             function () use ($today, $businessId) {
                 $retailRevenue = RetailSale::where('business_id', $businessId)
@@ -83,7 +83,8 @@ class DashboardController extends Controller
                     'total_debt'        => $totalDebt,
                     'today_expenses'    => $todayExpenses,
                     'low_stock_count'   => $lowStockCount,
-                    'needs_attention'   => $needsAttention,
+                    // store as plain array to avoid serializing Collection/Model objects
+                    'needs_attention'   => $needsAttention->toArray(),
                     'date'              => $today->toDateString(),
                 ];
             }
