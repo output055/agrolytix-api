@@ -12,7 +12,10 @@ class WholesaleProductController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = WholesaleProduct::with('units')
+        $businessId = auth()->user()->business_id;
+
+        $query = WholesaleProduct::where('business_id', $businessId)
+            ->with('units')
             ->withSum('wholesaleSaleItems as sales_count', 'quantity_base');
 
         if ($request->has('search')) {
@@ -35,17 +38,17 @@ class WholesaleProductController extends Controller
         if ($request->has('paginate')) {
             $perPage = $request->input('per_page', 10);
             $paginated = $query->paginate($perPage);
-            
+
             $stats = [
-                'total_cost_value' => (float) WholesaleProduct::sum(DB::raw('quantity * cost_price')),
-                'total_selling_value' => (float) WholesaleProduct::sum(DB::raw('quantity * sell_price')),
-                'low_stock_count' => (int) WholesaleProduct::whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
+                'total_cost_value' => (float) WholesaleProduct::where('business_id', $businessId)->sum(DB::raw('quantity * cost_price')),
+                'total_selling_value' => (float) WholesaleProduct::where('business_id', $businessId)->sum(DB::raw('quantity * sell_price')),
+                'low_stock_count' => (int) WholesaleProduct::where('business_id', $businessId)->whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
             ];
             
             return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
         }
 
-        return response()->json($query->get());
+        return response()->json($query->limit(100)->get());
     }
 
 

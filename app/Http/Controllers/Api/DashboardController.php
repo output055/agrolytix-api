@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\Expense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -19,7 +20,11 @@ class DashboardController extends Controller
         $today = Carbon::today();
         $businessId = auth()->user()->business_id;
 
-        $retailRevenue = RetailSale::where('business_id', $businessId)
+        return Cache::remember(
+            "dashboard-stats:{$businessId}:{$today->toDateString()}",
+            now()->addMinutes(5),
+            function () use ($today, $businessId) {
+                $retailRevenue = RetailSale::where('business_id', $businessId)
             ->whereDate('created_at', $today)
             ->where('status', 'completed')
             ->sum('total_amount');
@@ -70,16 +75,18 @@ class DashboardController extends Controller
             ->take(10)
             ->values();
 
-        return response()->json([
-            'retail_revenue'    => $retailRevenue,
-            'retail_profit'     => $retailProfit,
-            'wholesale_revenue' => $wholesaleRevenue,
-            'wholesale_profit'  => $wholesaleProfit,
-            'total_debt'        => $totalDebt,
-            'today_expenses'    => $todayExpenses,
-            'low_stock_count'   => $lowStockCount,
-            'needs_attention'   => $needsAttention,
-            'date'              => $today->toDateString(),
-        ]);
+                return response()->json([
+                    'retail_revenue'    => $retailRevenue,
+                    'retail_profit'     => $retailProfit,
+                    'wholesale_revenue' => $wholesaleRevenue,
+                    'wholesale_profit'  => $wholesaleProfit,
+                    'total_debt'        => $totalDebt,
+                    'today_expenses'    => $todayExpenses,
+                    'low_stock_count'   => $lowStockCount,
+                    'needs_attention'   => $needsAttention,
+                    'date'              => $today->toDateString(),
+                ]);
+            }
+        );
     }
 }
