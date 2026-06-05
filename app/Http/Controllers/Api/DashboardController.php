@@ -20,8 +20,8 @@ class DashboardController extends Controller
         $today = Carbon::today();
         $businessId = auth()->user()->business_id;
 
-        return Cache::remember(
-            "dashboard-stats:{$businessId}:{$today->toDateString()}",
+        $stats = Cache::remember(
+            "dashboard-stats:v2:{$businessId}:{$today->toDateString()}",
             now()->addMinutes(5),
             function () use ($today, $businessId) {
                 $retailRevenue = RetailSale::where('business_id', $businessId)
@@ -75,7 +75,7 @@ class DashboardController extends Controller
             ->take(10)
             ->values();
 
-                return response()->json([
+                return [
                     'retail_revenue'    => $retailRevenue,
                     'retail_profit'     => $retailProfit,
                     'wholesale_revenue' => $wholesaleRevenue,
@@ -85,8 +85,10 @@ class DashboardController extends Controller
                     'low_stock_count'   => $lowStockCount,
                     'needs_attention'   => $needsAttention,
                     'date'              => $today->toDateString(),
-                ]);
+                ];
             }
         );
+
+        return response()->json($this->canViewProfit() ? $stats : $this->hideProfitFields($stats));
     }
 }

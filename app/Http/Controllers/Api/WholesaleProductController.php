@@ -44,7 +44,7 @@ class WholesaleProductController extends Controller
                 'total_selling_value' => (float) WholesaleProduct::where('business_id', $businessId)->sum(DB::raw('quantity * sell_price')),
                 'low_stock_count' => (int) WholesaleProduct::where('business_id', $businessId)->whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
             ];
-            
+
             return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
         }
 
@@ -91,11 +91,11 @@ class WholesaleProductController extends Controller
     {
         $this->adminOnly($request);
         $data = $request->validate(['quantity' => 'required|integer|min:1']);
-        
+
         $wholesaleProduct->quantity += $data['quantity'];
         $wholesaleProduct->last_added_qty = $data['quantity'];
         $wholesaleProduct->save();
-        
+
         return response()->json($wholesaleProduct->fresh('units'));
     }
 

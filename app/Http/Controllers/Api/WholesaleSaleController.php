@@ -74,30 +74,37 @@ class WholesaleSaleController extends Controller
         ')->first();
 
         $paginated = $query->paginate(20);
+        $data = $paginated->items();
+        $summaryData = [
+            'total_transactions'   => (int)   ($summary->total_transactions   ?? 0),
+            'total_revenue'        => (float) ($summary->total_revenue        ?? 0),
+            'total_cost'           => (float) ($summary->total_cost           ?? 0),
+            'total_profit'         => (float) ($summary->total_profit         ?? 0),
+            'total_outstanding_debt' => (float) ($summary->total_outstanding_debt ?? 0),
+            'total_collected'      => (float) ($summary->total_collected      ?? 0),
+        ];
+
+        if (!$this->canViewProfit()) {
+            $data = $this->hideProfitFields($data);
+            $summaryData = $this->hideProfitFields($summaryData);
+        }
 
         return response()->json([
-            'data' => $paginated->items(),
+            'data' => $data,
             'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
                 'total'        => $paginated->total(),
             ],
-            'summary' => [
-                'total_transactions'   => (int)   ($summary->total_transactions   ?? 0),
-                'total_revenue'        => (float) ($summary->total_revenue        ?? 0),
-                'total_cost'           => (float) ($summary->total_cost           ?? 0),
-                'total_profit'         => (float) ($summary->total_profit         ?? 0),
-                'total_outstanding_debt' => (float) ($summary->total_outstanding_debt ?? 0),
-                'total_collected'      => (float) ($summary->total_collected      ?? 0),
-            ],
+            'summary' => $summaryData,
         ]);
     }
 
     public function show(int $id): JsonResponse
     {
         $sale = WholesaleSale::with(['items', 'client', 'worker', 'debtPayments'])->findOrFail($id);
-        return response()->json($sale);
+        return response()->json($this->canViewProfit() ? $sale : $this->hideProfitFields($sale));
     }
 
     public function payDebt(Request $request, int $id): JsonResponse
@@ -131,7 +138,8 @@ class WholesaleSaleController extends Controller
             $sale->client->decrement('total_debt', $data['amount_paid']);
 
             DB::commit();
-            return response()->json($sale->fresh(['debtPayments', 'client']));
+            $updatedSale = $sale->fresh(['debtPayments', 'client']);
+            return response()->json($this->canViewProfit() ? $updatedSale : $this->hideProfitFields($updatedSale));
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Payment failed: ' . $e->getMessage()], 500);

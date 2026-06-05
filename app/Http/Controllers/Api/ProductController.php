@@ -44,7 +44,7 @@ class ProductController extends Controller
                 'total_selling_value' => (float) Product::where('business_id', $businessId)->sum(DB::raw('quantity * sell_price')),
                 'low_stock_count' => (int) Product::where('business_id', $businessId)->whereRaw('quantity <= COALESCE(low_stock_alert, 0)')->count(),
             ];
-            
+
             return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
         }
 
@@ -128,11 +128,11 @@ class ProductController extends Controller
     {
         $this->adminOnly($request);
         $data = $request->validate(['quantity' => 'required|integer|min:1']);
-        
+
         $product->quantity += $data['quantity'];
         $product->last_added_qty = $data['quantity'];
         $product->save();
-        
+
         return response()->json($product->fresh('units'));
     }
 

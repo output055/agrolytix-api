@@ -56,7 +56,8 @@ class ExpenseController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        return response()->json($this->getTodayStats());
+        $stats = $this->getTodayStats();
+        return response()->json($this->canViewProfit() ? $stats : $this->hideProfitFields($stats));
     }
 
     private function getTodayStats()
