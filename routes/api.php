@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\StockTransferController;
 
 // Public
 Route::post('/contact', [ContactController::class, 'store']);
@@ -92,6 +93,18 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription'])->group(function ()
     Route::get('/expenses/today-stats', [ExpenseController::class, 'stats']);
     Route::post('/expenses', [ExpenseController::class, 'store']);
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
+
+    // Stock Transfers (Admin)
+    Route::get('/stock-transfers/eligible-businesses', [StockTransferController::class, 'eligibleBusinesses']);
+    Route::get('/stock-transfers/eligible-products', [StockTransferController::class, 'eligibleProducts']);
+    Route::get('/stock-transfers', [StockTransferController::class, 'index']);
+    Route::post('/stock-transfers', [StockTransferController::class, 'transfer']);
+
+    // Branches (Admin)
+    Route::get('/branches', [\App\Http\Controllers\Api\BranchController::class, 'index']);
+    Route::post('/branches', [\App\Http\Controllers\Api\BranchController::class, 'store']);
+    Route::put('/branches/{branch}', [\App\Http\Controllers\Api\BranchController::class, 'update']);
+    Route::delete('/branches/{branch}', [\App\Http\Controllers\Api\BranchController::class, 'destroy']);
 });
 
 // Super Admin Only

@@ -66,27 +66,34 @@ class RetailSaleController extends Controller
         ')->first();
 
         $paginated = $query->paginate(20);
+        $data = $paginated->items();
+        $summaryData = [
+            'total_transactions' => (int)   ($summary->total_transactions ?? 0),
+            'total_revenue'      => (float) ($summary->total_revenue      ?? 0),
+            'total_cost'         => (float) ($summary->total_cost         ?? 0),
+            'total_profit'       => (float) ($summary->total_profit       ?? 0),
+        ];
+
+        if (!$this->canViewProfit()) {
+            $data = $this->hideProfitFields($data);
+            $summaryData = $this->hideProfitFields($summaryData);
+        }
 
         return response()->json([
-            'data' => $paginated->items(),
+            'data' => $data,
             'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
                 'total'        => $paginated->total(),
             ],
-            'summary' => [
-                'total_transactions' => (int)   ($summary->total_transactions ?? 0),
-                'total_revenue'      => (float) ($summary->total_revenue      ?? 0),
-                'total_cost'         => (float) ($summary->total_cost         ?? 0),
-                'total_profit'       => (float) ($summary->total_profit       ?? 0),
-            ],
+            'summary' => $summaryData,
         ]);
     }
 
     public function show(int $id): JsonResponse
     {
         $sale = RetailSale::with(['items', 'worker', 'reversal'])->findOrFail($id);
-        return response()->json($sale);
+        return response()->json($this->canViewProfit() ? $sale : $this->hideProfitFields($sale));
     }
 }

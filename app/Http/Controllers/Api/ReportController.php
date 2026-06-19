@@ -24,34 +24,40 @@ class ReportController extends Controller
 
         $from = $request->input('date_from', now()->startOfMonth()->toDateString());
         $to   = $request->input('date_to', now()->toDateString());
+        $businessId = $request->user()->business_id;
 
-        $retail = RetailSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $retail = RetailSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit, SUM(total_amount - profit) as cost')
             ->first();
 
-        $wholesale = WholesaleSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $wholesale = WholesaleSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit, SUM(total_amount - profit) as cost, SUM(debt) as outstanding_debt')
             ->first();
 
-        $reversals = \App\Models\Reversal::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $reversals = \App\Models\Reversal::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->selectRaw('COUNT(*) as count, SUM(amount_reversed) as amount, SUM(cost_reversed) as cost')
             ->first();
 
-        $totalDebt = Client::sum('total_debt');
+        $totalDebt = Client::where('business_id', $businessId)->sum('total_debt');
 
         $expenses = Expense::whereBetween('expense_date', [$from, $to])
             ->selectRaw('COUNT(*) as count, SUM(amount) as total')
             ->first();
 
-        $expensesByCategory = Expense::whereBetween('expense_date', [$from, $to])
+        $expensesByCategory = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])
             ->selectRaw('category, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category')
             ->orderByDesc('total')
             ->get();
 
-        $lowStock = Product::whereRaw('quantity <= low_stock_alert')
+        $lowStock = Product::where('business_id', $businessId)
+            ->whereRaw('quantity <= low_stock_alert')
             ->select('id', 'name', 'quantity', 'low_stock_alert', 'base_unit')
             ->get();
 
@@ -77,38 +83,45 @@ class ReportController extends Controller
 
         $from = $request->input('date_from', now()->startOfMonth()->toDateString());
         $to   = $request->input('date_to', now()->toDateString());
+        $businessId = $request->user()->business_id;
 
         $daysDiff = Carbon::parse($from)->diffInDays(Carbon::parse($to));
         $useMonth = $daysDiff > 60;
         $groupExpr = $useMonth ? 'DATE_FORMAT(created_at, "%Y-%m")' : 'DATE(created_at)';
 
-        $retail = RetailSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $retail = RetailSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', 'completed')
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit')
             ->first();
 
-        $wholesale = WholesaleSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $wholesale = WholesaleSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as revenue, SUM(profit) as profit')
             ->first();
 
-        $totalExpenses = Expense::whereBetween('expense_date', [$from, $to])->sum('amount');
+        $totalExpenses = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])->sum('amount');
 
         $totalRevenue = floatval($retail->revenue ?? 0) + floatval($wholesale->revenue ?? 0);
         $totalProfit  = floatval($retail->profit ?? 0)  + floatval($wholesale->profit ?? 0);
 
-        $retailTrend = RetailSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $retailTrend = RetailSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', 'completed')
             ->selectRaw("$groupExpr as period, SUM(total_amount) as revenue, SUM(profit) as profit")
             ->groupByRaw($groupExpr)->orderBy('period')->get()->keyBy('period');
 
-        $wholesaleTrend = WholesaleSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $wholesaleTrend = WholesaleSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
             ->selectRaw("$groupExpr as period, SUM(total_amount) as revenue, SUM(profit) as profit")
             ->groupByRaw($groupExpr)->orderBy('period')->get()->keyBy('period');
 
         $expExpr = $useMonth ? 'DATE_FORMAT(expense_date, "%Y-%m")' : 'expense_date';
-        $expTrend = Expense::whereBetween('expense_date', [$from, $to])
+        $expTrend = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])
             ->selectRaw("$expExpr as period, SUM(amount) as total")
             ->groupByRaw($expExpr)->orderBy('period')->get()->keyBy('period');
 
@@ -151,14 +164,17 @@ class ReportController extends Controller
 
         $from = $request->input('date_from', now()->startOfMonth()->toDateString());
         $to   = $request->input('date_to', now()->toDateString());
+        $businessId = $request->user()->business_id;
 
         $topRetail = RetailSaleItem::join('retail_sales', 'retail_sale_items.retail_sale_id', '=', 'retail_sales.id')
+            ->where('retail_sales.business_id', $businessId)
             ->whereBetween('retail_sales.created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('retail_sales.status', 'completed')
             ->selectRaw('product_name, SUM(quantity_base) as total_qty, SUM(subtotal) as total_revenue')
             ->groupBy('product_name')->orderByDesc('total_revenue')->limit(10)->get();
 
         $topWholesale = WholesaleSaleItem::join('wholesale_sales', 'wholesale_sale_items.wholesale_sale_id', '=', 'wholesale_sales.id')
+            ->where('wholesale_sales.business_id', $businessId)
             ->whereBetween('wholesale_sales.created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('wholesale_sales.status', '!=', 'reversed')
             ->selectRaw('product_name, SUM(quantity_base) as total_qty, SUM(subtotal) as total_revenue')
@@ -167,12 +183,14 @@ class ReportController extends Controller
         $daysDiff  = Carbon::parse($from)->diffInDays(Carbon::parse($to));
         $groupExpr = $daysDiff > 60 ? 'DATE_FORMAT(created_at, "%Y-%m")' : 'DATE(created_at)';
 
-        $retailTrend = RetailSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $retailTrend = RetailSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', 'completed')
             ->selectRaw("$groupExpr as period, COUNT(*) as count, SUM(total_amount) as revenue")
             ->groupByRaw($groupExpr)->orderBy('period')->get()->keyBy('period');
 
-        $wholesaleTrend = WholesaleSale::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+        $wholesaleTrend = WholesaleSale::where('business_id', $businessId)
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', '!=', 'reversed')
             ->selectRaw("$groupExpr as period, COUNT(*) as count, SUM(total_amount) as revenue")
             ->groupByRaw($groupExpr)->orderBy('period')->get()->keyBy('period');
@@ -220,18 +238,23 @@ class ReportController extends Controller
 
         $from = $request->input('date_from', now()->startOfMonth()->toDateString());
         $to   = $request->input('date_to', now()->toDateString());
+        $businessId = $request->user()->business_id;
 
-        $total = Expense::whereBetween('expense_date', [$from, $to])->sum('amount');
-        $count = Expense::whereBetween('expense_date', [$from, $to])->count();
+        $total = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])->sum('amount');
+        $count = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])->count();
 
-        $byCategory = Expense::whereBetween('expense_date', [$from, $to])
+        $byCategory = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])
             ->selectRaw('category, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category')->orderByDesc('total')->get();
 
         $daysDiff  = Carbon::parse($from)->diffInDays(Carbon::parse($to));
         $groupExpr = $daysDiff > 60 ? 'DATE_FORMAT(expense_date, "%Y-%m")' : 'expense_date';
 
-        $trend = Expense::whereBetween('expense_date', [$from, $to])
+        $trend = Expense::where('business_id', $businessId)
+            ->whereBetween('expense_date', [$from, $to])
             ->selectRaw("$groupExpr as period, SUM(amount) as total")
             ->groupByRaw($groupExpr)->orderBy('period')->get();
 
@@ -267,11 +290,13 @@ class ReportController extends Controller
     public function debtAnalysis(Request $request): JsonResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
+        $businessId = $request->user()->business_id;
 
-        $totalDebt    = Client::sum('total_debt');
-        $debtorsCount = Client::where('total_debt', '>', 0)->count();
+        $totalDebt    = Client::where('business_id', $businessId)->sum('total_debt');
+        $debtorsCount = Client::where('business_id', $businessId)->where('total_debt', '>', 0)->count();
 
         $clients = Client::select('id', 'name', 'contact', 'location', 'total_debt')
+            ->where('business_id', $businessId)
             ->where('total_debt', '>', 0)
             ->orderByDesc('total_debt')
             ->get();
@@ -280,7 +305,8 @@ class ReportController extends Controller
         $aging = ['0-30' => 0.0, '31-60' => 0.0, '61-90' => 0.0, '90+' => 0.0];
 
         foreach ($clients as $client) {
-            $oldest = WholesaleSale::where('client_id', $client->id)
+            $oldest = WholesaleSale::where('business_id', $businessId)
+                ->where('client_id', $client->id)
                 ->where('debt', '>', 0)
                 ->where('status', '!=', 'reversed')
                 ->orderBy('created_at')
@@ -327,22 +353,32 @@ class ReportController extends Controller
     public function inventoryInsights(Request $request): JsonResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
+        $businessId = $request->user()->business_id;
 
-        $retailLow  = Product::whereRaw('quantity > 0 AND quantity <= low_stock_alert')
+        $retailLow  = Product::where('business_id', $businessId)
+            ->whereRaw('quantity > 0 AND quantity <= low_stock_alert')
             ->select('id', 'name', 'category', 'quantity', 'low_stock_alert', 'base_unit', 'cost_price')->orderBy('quantity')->get();
-        $retailOut  = Product::where('quantity', 0)
+        $retailOut  = Product::where('business_id', $businessId)
+            ->where('quantity', 0)
             ->select('id', 'name', 'category', 'quantity', 'low_stock_alert', 'base_unit', 'cost_price')->get();
-        $wsLow      = WholesaleProduct::whereRaw('quantity > 0 AND quantity <= low_stock_alert')
+        $wsLow      = WholesaleProduct::where('business_id', $businessId)
+            ->whereRaw('quantity > 0 AND quantity <= low_stock_alert')
             ->select('id', 'name', 'category', 'quantity', 'low_stock_alert', 'base_unit', 'cost_price')->orderBy('quantity')->get();
-        $wsOut      = WholesaleProduct::where('quantity', 0)
+        $wsOut      = WholesaleProduct::where('business_id', $businessId)
+            ->where('quantity', 0)
             ->select('id', 'name', 'category', 'quantity', 'low_stock_alert', 'base_unit', 'cost_price')->get();
 
-        $retailCostVal   = floatval(Product::selectRaw('SUM(quantity * cost_price) as v')->value('v') ?? 0);
-        $retailSellVal   = floatval(Product::selectRaw('SUM(quantity * sell_price) as v')->value('v') ?? 0);
-        $wsCostVal       = floatval(WholesaleProduct::selectRaw('SUM(quantity * cost_price) as v')->value('v') ?? 0);
-        $wsSellVal       = floatval(WholesaleProduct::selectRaw('SUM(quantity * sell_price) as v')->value('v') ?? 0);
+        $retailCostVal   = floatval(Product::where('business_id', $businessId)
+            ->selectRaw('SUM(quantity * cost_price) as v')->value('v') ?? 0);
+        $retailSellVal   = floatval(Product::where('business_id', $businessId)
+            ->selectRaw('SUM(quantity * sell_price) as v')->value('v') ?? 0);
+        $wsCostVal       = floatval(WholesaleProduct::where('business_id', $businessId)
+            ->selectRaw('SUM(quantity * cost_price) as v')->value('v') ?? 0);
+        $wsSellVal       = floatval(WholesaleProduct::where('business_id', $businessId)
+            ->selectRaw('SUM(quantity * sell_price) as v')->value('v') ?? 0);
 
-        $retailByCat = Product::selectRaw('category, COUNT(*) as count, SUM(quantity * cost_price) as value')
+        $retailByCat = Product::where('business_id', $businessId)
+            ->selectRaw('category, COUNT(*) as count, SUM(quantity * cost_price) as value')
             ->groupBy('category')->orderByDesc('value')->get();
 
         $mapFn = fn($p) => ['id' => $p->id, 'name' => $p->name, 'category' => $p->category, 'quantity' => $p->quantity, 'alert' => $p->low_stock_alert, 'unit' => $p->base_unit, 'cost' => floatval($p->cost_price)];

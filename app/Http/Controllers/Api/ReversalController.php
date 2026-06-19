@@ -14,7 +14,7 @@ class ReversalController extends Controller
     public function index(): JsonResponse
     {
         $reversals = Reversal::with(['sale.items', 'reversedBy'])->latest()->get();
-        return response()->json($reversals);
+        return response()->json($this->canViewProfit() ? $reversals : $this->hideProfitFields($reversals));
     }
 
     public function store(Request $request): JsonResponse
@@ -120,7 +120,8 @@ class ReversalController extends Controller
             ]);
 
             DB::commit();
-            return response()->json($reversal->load(['sale.items', 'reversedBy']), 201);
+            $reversal->load(['sale.items', 'reversedBy']);
+            return response()->json($this->canViewProfit() ? $reversal : $this->hideProfitFields($reversal), 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Reversal failed: ' . $e->getMessage()], 500);
