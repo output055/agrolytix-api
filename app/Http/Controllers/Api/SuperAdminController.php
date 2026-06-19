@@ -152,7 +152,7 @@ class SuperAdminController extends Controller
         $request->validate([
             'subscription_status'  => 'required|string|in:active,trialing,past_due,cancelled',
             'subscription_ends_at' => 'nullable|date',
-            'subscription_plan'    => 'nullable|string|in:monthly,annual',
+            'subscription_plan'    => 'nullable|string|in:monthly,annual,pro',
         ]);
 
         $business = Business::withoutGlobalScopes()->findOrFail($id);
@@ -275,6 +275,21 @@ class SuperAdminController extends Controller
         $business = Business::withoutGlobalScopes()->findOrFail($id);
         $business->update(['subscription_plan' => $request->plan]);
         return response()->json(['message' => 'Plan changed successfully']);
+    }
+
+    /** POST /api/super-admin/businesses/{id}/make-pro
+     *  Grants the business permanent Pro access regardless of their current plan or status.
+     *  Sets subscription_ends_at 100 years into the future so isAccessAllowed() always returns true.
+     */
+    public function makePro($id): \Illuminate\Http\JsonResponse
+    {
+        $business = Business::withoutGlobalScopes()->findOrFail($id);
+        $business->update([
+            'subscription_status'  => 'active',
+            'subscription_plan'    => 'pro',
+            'subscription_ends_at' => now()->addYears(100),
+        ]);
+        return response()->json(['message' => 'Business granted Pro access permanently.']);
     }
 
     /** GET /api/super-admin/messages */

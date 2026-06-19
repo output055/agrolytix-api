@@ -104,6 +104,7 @@ Route::middleware(['auth:sanctum', 'super_admin'])->group(function () {
     Route::post('/super-admin/businesses/{id}/activate', [\App\Http\Controllers\Api\SuperAdminController::class, 'activate']);
     Route::post('/super-admin/businesses/{id}/extend-trial', [\App\Http\Controllers\Api\SuperAdminController::class, 'extendTrial']);
     Route::post('/super-admin/businesses/{id}/change-plan', [\App\Http\Controllers\Api\SuperAdminController::class, 'changePlan']);
+    Route::post('/super-admin/businesses/{id}/make-pro', [\App\Http\Controllers\Api\SuperAdminController::class, 'makePro']);
     Route::get('/super-admin/payments', [\App\Http\Controllers\Api\SuperAdminController::class, 'payments']);
     Route::get('/super-admin/messages', [\App\Http\Controllers\Api\SuperAdminController::class, 'messages']);
     Route::patch('/super-admin/messages/{id}/read', [\App\Http\Controllers\Api\SuperAdminController::class, 'markMessageRead']);
