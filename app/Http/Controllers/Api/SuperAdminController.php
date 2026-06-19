@@ -287,7 +287,7 @@ class SuperAdminController extends Controller
         $business->update([
             'subscription_status'  => 'active',
             'subscription_plan'    => 'pro',
-            'subscription_ends_at' => now()->addYears(100),
+            'subscription_ends_at' => Carbon::create(2037, 12, 31, 23, 59, 59), // Max safe TIMESTAMP value
         ]);
         return response()->json(['message' => 'Business granted Pro access permanently.']);
     }
