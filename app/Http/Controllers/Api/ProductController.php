@@ -18,12 +18,16 @@ class ProductController extends Controller
             ->with('units')
             ->withSum('retailSaleItems as sales_count', 'quantity_base');
 
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->input('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->where('products.name', 'like', "%{$search}%")
                   ->orWhere('products.category', 'like', "%{$search}%");
             });
+        }
+
+        if ($request->has('category') && $request->input('category') !== 'All' && $request->input('category')) {
+            $query->where('products.category', $request->input('category'));
         }
 
         if ($request->has('sort_column') && $request->input('sort_column')) {
@@ -48,7 +52,19 @@ class ProductController extends Controller
             return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
         }
 
-        return response()->json($query->limit(100)->get());
+        return response()->json($query->get());
+    }
+
+    public function categories(Request $request): JsonResponse
+    {
+        $businessId = auth()->user()->business_id;
+        $categories = Product::where('business_id', $businessId)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->pluck('category');
+
+        return response()->json($categories);
     }
 
 

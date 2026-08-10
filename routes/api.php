@@ -47,10 +47,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription'])->group(function ()
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
     // Retail Inventory (Admin only)
+    Route::get('/products/categories', [ProductController::class, 'categories']);
     Route::apiResource('products', ProductController::class);
     Route::patch('/products/{product}/restock', [ProductController::class, 'restock']);
 
     // Wholesale Inventory (Admin only)
+    Route::get('/wholesale-products/categories', [WholesaleProductController::class, 'categories']);
     Route::apiResource('wholesale-products', WholesaleProductController::class);
     Route::patch('/wholesale-products/{wholesaleProduct}/restock', [WholesaleProductController::class, 'restock']);
 
