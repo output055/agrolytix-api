@@ -42,4 +42,10 @@ return [
         'monthly_plan' => env('PAYSTACK_MONTHLY_PLAN'),
     ],
 
+    'supabase' => [
+        'url'               => env('SUPABASE_URL'),
+        'service_role_key'  => env('SUPABASE_SERVICE_ROLE_KEY'),
+        'mirror_batch_size' => env('SUPABASE_MIRROR_BATCH_SIZE', 500),
+    ],
+
 ];

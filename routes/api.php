@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\StockTransferController;
+use App\Http\Controllers\Api\SupabaseBackupController;
 
 // Public
 Route::post('/contact', [ContactController::class, 'store']);
@@ -120,4 +121,8 @@ Route::middleware(['auth:sanctum', 'super_admin'])->group(function () {
     Route::get('/super-admin/payments', [\App\Http\Controllers\Api\SuperAdminController::class, 'payments']);
     Route::get('/super-admin/messages', [\App\Http\Controllers\Api\SuperAdminController::class, 'messages']);
     Route::patch('/super-admin/messages/{id}/read', [\App\Http\Controllers\Api\SuperAdminController::class, 'markMessageRead']);
+
+    // Supabase mirror backup (super admin only)
+    Route::post('/backups/supabase/run',    [SupabaseBackupController::class, 'run']);
+    Route::get('/backups/supabase/latest',  [SupabaseBackupController::class, 'latest']);
 });
