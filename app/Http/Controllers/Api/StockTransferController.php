@@ -56,8 +56,8 @@ class StockTransferController extends Controller
 
         $model = $data['type'] === 'retail' ? Product::class : WholesaleProduct::class;
 
-        // Bypass the BusinessScope to query a different business's products
-        $products = $model::withoutGlobalScope(BusinessScope::class)
+        // Bypass scopes to query a different business's products
+        $products = $model::withoutGlobalScopes()
             ->where('business_id', $data['target_business_id'])
             ->orderBy('name')
             ->get(['id', 'name', 'quantity', 'base_unit', 'category']);
@@ -131,22 +131,29 @@ class StockTransferController extends Controller
             $toBusinessId = $isCrossBranch ? (int) $data['to_business_id'] : $source->business_id;
 
             if (!empty($data['to_product_id'])) {
-                // Find in the target business (bypass scope for cross-branch)
-                $dest = $destModel::withoutGlobalScope(BusinessScope::class)
+                // Find explicitly selected product in the target business
+                $dest = $destModel::withoutGlobalScopes()
                     ->where('business_id', $toBusinessId)
                     ->lockForUpdate()
                     ->find($data['to_product_id']);
             } else {
-                $dest = null;
+                // If not explicitly selected, match by product name in the target business before auto-creating
+                $dest = $destModel::withoutGlobalScopes()
+                    ->where('business_id', $toBusinessId)
+                    ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($source->name))])
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->first();
             }
 
             if ($dest) {
-                // Existing destination product — just add stock
+                // Existing destination product — add stock & update last added
                 $dest->quantity += $baseQuantity;
+                $dest->last_added_qty = $baseQuantity;
                 $dest->save();
             } else {
                 // Auto-create destination product in target business
-                // withoutGlobalScope so the create lands in the right business
+                // withoutGlobalScopes so the create lands in the right business
                 $dest = $destModel::withoutGlobalScopes()->forceCreate([
                     'name'            => $source->name,
                     'category'        => $source->category,
@@ -155,6 +162,7 @@ class StockTransferController extends Controller
                     'sell_price'      => $source->sell_price,
                     'base_unit'       => $source->base_unit,
                     'quantity'        => $baseQuantity,
+                    'last_added_qty'  => $baseQuantity,
                     'low_stock_alert' => $source->low_stock_alert,
                     'business_id'     => $toBusinessId,
                 ]);
@@ -183,10 +191,14 @@ class StockTransferController extends Controller
                 'transferred_by'    => $request->user()->id,
             ]);
 
+            // Safely reload source and destination across branches bypassing business scopes
+            $freshSource = $sourceModel::withoutGlobalScopes()->with('units')->find($source->id);
+            $freshDest   = $destModel::withoutGlobalScopes()->with('units')->find($dest->id);
+
             return [
                 'transfer'     => $transfer->load('transferredBy', 'toBusiness'),
-                'source'       => $source->fresh('units'),
-                'destination'  => $dest->fresh('units'),
+                'source'       => $freshSource,
+                'destination'  => $freshDest,
                 'auto_created' => $autoCreated,
             ];
         });
