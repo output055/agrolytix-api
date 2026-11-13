@@ -93,6 +93,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'subscription'])->group(function ()
     // Expenses (all users can create/view own; admins can view all and delete)
     Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::get('/expenses/today-stats', [ExpenseController::class, 'stats']);
+    Route::get('/reconciliation/daily-profit', [ExpenseController::class, 'dailyProfit']);
     Route::post('/expenses', [ExpenseController::class, 'store']);
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 

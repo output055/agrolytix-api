@@ -56,13 +56,31 @@ class ExpenseController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        $stats = $this->getTodayStats();
+        $stats = $this->getTodayStats($request->query('date'));
         return response()->json($this->canViewProfit() ? $stats : $this->hideProfitFields($stats));
     }
 
-    private function getTodayStats()
+    /**
+     * Get daily profit summary for cash declaration SMS reconciliation.
+     */
+    public function dailyProfit(Request $request): JsonResponse
     {
-        $today = \Illuminate\Support\Carbon::today();
+        $stats = $this->getTodayStats($request->query('date'));
+        return response()->json([
+            'retail_profit'    => $stats['retail_profit'],
+            'wholesale_profit' => $stats['wholesale_profit'],
+            'total_profit'     => $stats['total_profit'],
+            'today_expenses'   => $stats['today_expenses'],
+            'net_profit'       => $stats['net_profit'],
+            'date'             => $stats['date'],
+        ]);
+    }
+
+    private function getTodayStats(?string $date = null)
+    {
+        $today = $date && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)
+            ? \Illuminate\Support\Carbon::parse($date)
+            : \Illuminate\Support\Carbon::today();
         $businessId = auth()->user()->business_id;
 
         $retailRevenue = \App\Models\RetailSale::where('business_id', $businessId)
